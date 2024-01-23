@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Container, Service } from 'typedi'
-import { TatumConnector } from '../../../connector/tatum.connector'
+import { TatumConnector } from '../../../connector'
 import { JsonRpcCall, JsonRpcResponse, Network } from '../../../dto'
+import { GetI } from '../../../dto/GetI'
 import { PostI } from '../../../dto/PostI'
 import { AbstractRpcInterface } from '../../../dto/rpc/AbstractJsonRpcInterface'
-import { CONFIG, Constant, Utils } from '../../../util'
+import { Logger } from '../../../service/logger/logger.types'
+import { CONFIG, Constant, LOGGER, Utils } from '../../../util'
 import { RpcNode, RpcNodeType } from '../../tatum'
-import { GetI } from '../../../dto/GetI'
 
 interface RpcStatus {
   node: {
@@ -55,6 +56,7 @@ interface HandleFailedRpcCallParams {
   e: unknown
   nodeType: RpcNodeType
   requestType: RequestType
+  url: string
 }
 
 @Service({
@@ -65,6 +67,7 @@ interface HandleFailedRpcCallParams {
 })
 export class LoadBalancer implements AbstractRpcInterface {
   protected readonly connector: TatumConnector
+  private readonly logger: Logger
 
   private rpcUrls: RpcUrl = {
     [RpcNodeType.NORMAL]: [],
@@ -74,12 +77,14 @@ export class LoadBalancer implements AbstractRpcInterface {
     [RpcNodeType.NORMAL]: {} as UrlIndex,
     [RpcNodeType.ARCHIVE]: {} as UrlIndex,
   }
-  private timeout: unknown
+  private interval: ReturnType<typeof setInterval>
   private network: Network
+  private noActiveNode = false
 
   constructor(private readonly id: string) {
     this.connector = Container.of(this.id).get(TatumConnector)
     this.network = Container.of(this.id).get(CONFIG).network
+    this.logger = Container.of(this.id).get(LOGGER)
   }
 
   async init() {
@@ -93,20 +98,22 @@ export class LoadBalancer implements AbstractRpcInterface {
       await this.initRemoteHostsUrls()
     }
 
-    // TODO: consider removing this because we already have a timeout in checkStatuses()
-    if (!config.rpc?.oneTimeLoadBalancing) {
-      this.timeout = setTimeout(() => this.checkStatuses(), Constant.OPEN_RPC.LB_INTERVAL)
-      // Check if we are running in Node.js environment
-      if (typeof process !== 'undefined' && process.release && process.release.name === 'node') {
-        process.on('exit', () => this.destroy())
-      }
+    if (typeof process !== 'undefined' && process.release && process.release.name === 'node') {
+      process.on('exit', () => this.destroy())
+    }
+
+    if (config.rpc?.oneTimeLoadBalancing) {
+      Utils.log({ id: this.id, message: 'oneTimeLoadBalancing enabled' })
+      setTimeout(() => this.checkStatuses(), Constant.OPEN_RPC.LB_INTERVAL)
     } else {
-      await this.checkStatuses()
+      this.interval = setInterval(() => this.checkStatuses(), Constant.OPEN_RPC.LB_INTERVAL)
     }
   }
 
   destroy() {
-    clearTimeout(this.timeout as number)
+    Utils.log({ id: this.id, message: 'Destroying LoadBalancer instance' })
+    clearInterval(this.interval)
+    process.off('exit', () => this.destroy())
   }
 
   private initCustomNodes(nodes: RpcNode[]) {
@@ -137,25 +144,33 @@ export class LoadBalancer implements AbstractRpcInterface {
   }
 
   private async checkStatuses() {
-    await this.checkStatus(RpcNodeType.NORMAL)
-    await this.checkStatus(RpcNodeType.ARCHIVE)
+    try {
+      await this.checkStatus(RpcNodeType.NORMAL)
+      await this.checkStatus(RpcNodeType.ARCHIVE)
+      this.checkIfNoActiveNodes()
+    } catch (e) {
+      Utils.log({
+        id: this.id,
+        message: `LoadBalancing failed to check statuses. Error: ${JSON.stringify(
+          e,
+          Object.getOwnPropertyNames(e),
+        )}`,
+      })
+    }
+  }
+
+  private checkIfNoActiveNodes() {
     if (!this.activeUrl[RpcNodeType.NORMAL].url && !this.activeUrl[RpcNodeType.ARCHIVE].url) {
       Utils.log({ id: this.id, message: 'No active node found, please set node urls manually.' })
-      throw new Error('No active node found, please set node urls manually.')
-    }
-
-    const { rpc } = Container.of(this.id).get(CONFIG)
-    if (!rpc?.oneTimeLoadBalancing) {
-      if (this.timeout) {
-        this.destroy()
-      }
-      this.timeout = setTimeout(() => this.checkStatuses(), Constant.OPEN_RPC.LB_INTERVAL)
+      this.noActiveNode = true
+    } else {
+      this.noActiveNode = false
     }
   }
 
   private async checkStatus(nodeType: RpcNodeType) {
     const { rpc, network } = Container.of(this.id).get(CONFIG)
-    const all = []
+
     /**
      * Check status of all nodes.
      * If the node is not responding, it will be marked as failed.
@@ -164,76 +179,73 @@ export class LoadBalancer implements AbstractRpcInterface {
     const statusPayload = Utils.getStatusPayload(network)
     for (const server of this.rpcUrls[nodeType]) {
       Utils.log({ id: this.id, message: `Checking status of ${server.node.url}` })
-      all.push(
-        Utils.fetchWithTimeout(Utils.getStatusUrl(network, server.node.url), this.id, {
-          method: 'POST',
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          // body: statusPayload ? JSON.stringify(statusPayload) : undefined,
-          // add body only if is defined
-          ...(statusPayload && { body: JSON.stringify(statusPayload) }),
-        })
-          .then(async ({ response: res, responseTime }) => {
-            server.lastResponseTime = responseTime
-            const response = await res.json()
-            Utils.log({
-              id: this.id,
-              message: `Response time of ${server.node.url} is ${server.lastResponseTime}ms with response: `,
-              data: response,
-            })
-            if (res.ok && Utils.isResponseOk(network, response)) {
-              server.failed = false
-              server.lastBlock = Utils.parseStatusPayload(network, response)
-            } else {
-              Utils.log({
-                id: this.id,
-                message: `Failed to check status of ${server.node.url}. Error: ${JSON.stringify(
-                  response,
-                  Object.getOwnPropertyNames(response),
-                )}`,
-              })
-              server.failed = true
-            }
+
+      await Utils.fetchWithTimeoutAndRetry(Utils.getStatusUrl(network, server.node.url), this.id, {
+        method: Utils.getStatusMethod(network),
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        // body: statusPayload ? JSON.stringify(statusPayload) : undefined,
+        // add body only if is defined
+        ...(statusPayload && { body: JSON.stringify(statusPayload) }),
+      })
+        .then(async ({ response: res, responseTime }) => {
+          server.lastResponseTime = responseTime
+          const response = await res.json()
+          Utils.log({
+            id: this.id,
+            message: `Response time of ${server.node.url} is ${server.lastResponseTime}ms with response: `,
+            data: response,
           })
-          .catch((e) => {
+          if (res.ok && Utils.isResponseOk(network, response)) {
+            server.failed = false
+            server.lastBlock = Utils.parseStatusPayload(network, response)
+          } else {
             Utils.log({
               id: this.id,
               message: `Failed to check status of ${server.node.url}. Error: ${JSON.stringify(
-                e,
-                Object.getOwnPropertyNames(e),
+                response,
+                Object.getOwnPropertyNames(response),
               )}`,
             })
-            Utils.log({
-              id: this.id,
-              message: `Server ${server.node.url} will be marked as failed and will be removed from the pool.`,
-            })
             server.failed = true
-          }),
-      )
+          }
+        })
+        .catch((e) => {
+          Utils.log({
+            id: this.id,
+            message: `Failed to check status of ${server.node.url}. Error: ${JSON.stringify(
+              e,
+              Object.getOwnPropertyNames(e),
+            )}`,
+          })
+          Utils.log({
+            id: this.id,
+            message: `Server ${server.node.url} will be marked as failed and will be removed from the pool.`,
+          })
+          server.failed = true
+        })
     }
     /**
      * The fastest node will be selected and will be used.
      */
-    await Promise.allSettled(all).then(() => {
-      const { fastestServer, index } = LoadBalancer.getFastestServer(
-        this.rpcUrls[nodeType],
-        rpc?.allowedBlocksBehind as number,
-      )
+    const { fastestServer, index } = LoadBalancer.getFastestServer(
+      this.rpcUrls[nodeType],
+      rpc?.allowedBlocksBehind as number,
+    )
 
+    Utils.log({
+      id: this.id,
+      data: this.rpcUrls[nodeType],
+      mode: 'table',
+    })
+    if (fastestServer && index !== -1) {
       Utils.log({
         id: this.id,
-        data: this.rpcUrls[nodeType],
-        mode: 'table',
+        message: `Server ${fastestServer.node.url} is selected as active server for ${RpcNodeType[nodeType]}.`,
+        data: { url: fastestServer.node.url, index },
       })
-      if (fastestServer && index !== -1) {
-        Utils.log({
-          id: this.id,
-          message: `Server ${fastestServer.node.url} is selected as active server for ${RpcNodeType[nodeType]}.`,
-          data: { url: fastestServer.node.url, index },
-        })
-        this.activeUrl[nodeType] = { url: fastestServer.node.url, index }
-      }
-    })
+      this.activeUrl[nodeType] = { url: fastestServer.node.url, index }
+    }
   }
 
   private static getFastestServer(servers: RpcStatus[], allowedBlocksBehind: number) {
@@ -267,7 +279,21 @@ export class LoadBalancer implements AbstractRpcInterface {
       return { url: this.getActiveUrl(RpcNodeType.NORMAL).url, type: RpcNodeType.NORMAL }
     }
 
-    throw new Error('No active node found.')
+    if (this.noActiveNode) {
+      Utils.log({
+        id: this.id,
+        data: this.rpcUrls[RpcNodeType.NORMAL],
+        mode: 'table',
+      })
+      Utils.log({
+        id: this.id,
+        data: this.rpcUrls[RpcNodeType.ARCHIVE],
+        mode: 'table',
+      })
+      throw new Error('No active ARCHIVE node found, fallback failed, please set node urls manually.')
+    }
+
+    throw new Error('No active ARCHIVE node found.')
   }
 
   public getActiveNormalUrlWithFallback() {
@@ -280,7 +306,21 @@ export class LoadBalancer implements AbstractRpcInterface {
       return { url: this.getActiveUrl(RpcNodeType.ARCHIVE).url, type: RpcNodeType.ARCHIVE }
     }
 
-    throw new Error('No active node found.')
+    if (this.noActiveNode) {
+      Utils.log({
+        id: this.id,
+        data: this.rpcUrls[RpcNodeType.NORMAL],
+        mode: 'table',
+      })
+      Utils.log({
+        id: this.id,
+        data: this.rpcUrls[RpcNodeType.ARCHIVE],
+        mode: 'table',
+      })
+      throw new Error('No active NORMAL node found, fallback failed, please set node urls manually.')
+    }
+
+    throw new Error('No active NORMAL node found.')
   }
 
   public getActiveUrl(nodeType: RpcNodeType) {
@@ -374,7 +414,7 @@ export class LoadBalancer implements AbstractRpcInterface {
       await this.initRemoteHostsFromResponse(normal, RpcNodeType.NORMAL)
       await this.initRemoteHostsFromResponse(archive, RpcNodeType.ARCHIVE)
     } catch (e) {
-      console.error(
+      this.logger.error(
         new Date().toISOString(),
         `Failed to initialize RPC module. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`,
       )
@@ -394,9 +434,8 @@ export class LoadBalancer implements AbstractRpcInterface {
     }
   }
 
-  async handleFailedRpcCall({rpcCall, e, nodeType, requestType}: HandleFailedRpcCallParams) {
+  async handleFailedRpcCall({ rpcCall, e, nodeType, requestType, url }: HandleFailedRpcCallParams) {
     const { rpc: rpcConfig } = Container.of(this.id).get(CONFIG)
-    const { url } = this.getActiveUrl(nodeType)
     const activeIndex = this.getActiveIndex(nodeType)
     if (requestType === RequestType.RPC && 'method' in rpcCall) {
       Utils.log({
@@ -418,14 +457,14 @@ export class LoadBalancer implements AbstractRpcInterface {
     } else if (requestType === RequestType.POST && 'path' in rpcCall && 'body' in rpcCall) {
       Utils.log({
         id: this.id,
-        message: `Failed to call request on url ${rpcCall.basePath}${rpcCall.path} with body ${JSON.stringify(
+        message: `Failed to call request on url ${url}${rpcCall.path} with body ${JSON.stringify(
           rpcCall.body,
         )}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`,
       })
     } else if (requestType === RequestType.GET && 'path' in rpcCall) {
       Utils.log({
         id: this.id,
-        message: `Failed to call request on url ${rpcCall.basePath}${rpcCall.path}. Error: ${JSON.stringify(
+        message: `Failed to call request on url ${url}${rpcCall.path}. Error: ${JSON.stringify(
           e,
           Object.getOwnPropertyNames(e),
         )}`,
@@ -447,7 +486,7 @@ export class LoadBalancer implements AbstractRpcInterface {
     })
 
     if (activeIndex == null) {
-      console.error(
+      this.logger.error(
         `No active node found for node type ${RpcNodeType[nodeType]}. Looks like your request is malformed or all nodes are down. Turn on verbose mode to see more details and check status pages.`,
       )
       throw e
@@ -464,7 +503,7 @@ export class LoadBalancer implements AbstractRpcInterface {
       rpcConfig?.allowedBlocksBehind as number,
     )
     if (index === -1) {
-      console.error(
+      this.logger.error(
         `All RPC nodes are unavailable. Looks like your request is malformed or all nodes are down. Turn on verbose mode to see more details and check status pages.`,
       )
       throw e
@@ -487,8 +526,8 @@ export class LoadBalancer implements AbstractRpcInterface {
       })
       return await this.connector.rpcCall(url, rpcCall)
     } catch (e) {
-      await this.handleFailedRpcCall({ rpcCall, e, nodeType: type, requestType: RequestType.RPC })
-      return await this.rawRpcCall(rpcCall)
+      await this.handleFailedRpcCall({ rpcCall, e, nodeType: type, requestType: RequestType.RPC, url })
+      return await this.rawRpcCall(rpcCall, archive)
     }
   }
 
@@ -497,35 +536,42 @@ export class LoadBalancer implements AbstractRpcInterface {
     try {
       return await this.connector.rpcCall(url, rpcCall)
     } catch (e) {
-      await this.handleFailedRpcCall({ rpcCall, e, nodeType: type, requestType: RequestType.BATCH })
+      await this.handleFailedRpcCall({ rpcCall, e, nodeType: type, requestType: RequestType.BATCH, url })
       return await this.rawBatchRpcCall(rpcCall)
     }
   }
 
-  async post<T>({ path, body, basePath }: PostI): Promise<T> {
+  async post<T>({ path, body, prefix }: PostI): Promise<T> {
     const { url, type } = this.getActiveNormalUrlWithFallback()
-    const basePathUrl= basePath ?? url
+    const basePath = prefix ? `${url}${prefix}` : url
     try {
-      return await this.connector.post<T>({ basePath: basePathUrl, path, body })
+      return await this.connector.post<T>({ basePath, path, body })
     } catch (e) {
       await this.handleFailedRpcCall({
-        rpcCall: { path, body, basePath: basePathUrl },
+        rpcCall: { path, body },
         e,
         nodeType: type,
         requestType: RequestType.POST,
+        url: basePath,
       })
-      return await this.post({ path, body, basePath })
+      return await this.post({ path, body, prefix })
     }
   }
 
-  async get<T>({ path, basePath }: GetI): Promise<T> {
+  async get<T>({ path, prefix }: GetI): Promise<T> {
     const { url, type } = this.getActiveNormalUrlWithFallback()
-    const basePathUrl= basePath ?? url
+    const basePath = prefix ? `${url}${prefix}` : url
     try {
-      return await this.connector.get<T>({ basePath: basePathUrl, path })
+      return await this.connector.get<T>({ basePath, path })
     } catch (e) {
-      await this.handleFailedRpcCall({ rpcCall: { path, basePath: basePathUrl }, e, nodeType: type, requestType: RequestType.GET })
-      return await this.get({ path, basePath })
+      await this.handleFailedRpcCall({
+        rpcCall: { path },
+        e,
+        nodeType: type,
+        requestType: RequestType.GET,
+        url: basePath,
+      })
+      return await this.get({ path, prefix })
     }
   }
 

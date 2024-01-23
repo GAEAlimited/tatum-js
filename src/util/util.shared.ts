@@ -3,7 +3,11 @@ import { BigNumber } from 'bignumber.js'
 import { Container } from 'typedi'
 import { version } from '../../package.json'
 import {
-  AddressEventNotificationChain, isBnbLoadBalancerNetwork,
+  AddressEventNotificationChain,
+  isAlgorandAlgodNetwork,
+  isAlgorandIndexerNetwork,
+  isBnbLoadBalancerNetwork,
+  isCardanoNetwork,
   isEosLoadBalancerNetwork,
   isEosNetwork,
   isEvmArchiveNonArchiveBeaconLoadBalancerNetwork,
@@ -13,9 +17,14 @@ import {
   isNativeEvmLoadBalancerNetwork,
   isSameGetBlockNetwork,
   isSolanaNetwork,
+  isStellarLoadBalancerNetwork,
+  isStellarNetwork,
+  isTezosNetwork,
   isTronLoadBalancerNetwork,
   isTronNetwork,
-  isUtxoBasedNetwork, isUtxoEstimateFeeNetwork, isUtxoLoadBalancerEstimateFeeNetwork,
+  isUtxoBasedNetwork,
+  isUtxoEstimateFeeNetwork,
+  isUtxoLoadBalancerEstimateFeeNetwork,
   isUtxoLoadBalancerNetwork,
   isXrpNetwork,
   JsonRpcCall,
@@ -23,8 +32,12 @@ import {
   MAPPED_NETWORK,
   MappedNetwork,
   Network,
+  QueryParams,
+  QueryValue,
 } from '../dto'
 import {
+  AlgorandAlgod,
+  AlgorandIndexer,
   ApiVersion,
   ArbitrumNova,
   ArbitrumOne,
@@ -32,7 +45,9 @@ import {
   AvalancheC,
   BinanceSmartChain,
   Bitcoin,
-  BitcoinCash, Bnb,
+  BitcoinCash,
+  Bnb,
+  CardanoRosetta,
   Celo,
   Chiliz,
   Cronos,
@@ -58,36 +73,67 @@ import {
   Palm,
   Polygon,
   Solana,
+  Stellar,
   TatumConfig,
   Tezos,
   Tron,
   UtxoRpc,
   Vechain,
-  Xdc,
+  XinFin,
   Xrp,
   ZCash,
 } from '../service'
 import { EvmArchiveLoadBalancerRpc } from '../service/rpc/evm/EvmArchiveLoadBalancerRpc'
+import { EvmBeaconArchiveLoadBalancerRpc } from '../service/rpc/evm/EvmBeaconArchiveLoadBalancerRpc'
 import { NativeEvmArchiveLoadBalancerRpc } from '../service/rpc/evm/NativeEvmArchiveLoadBalancerRpc'
 import { TronLoadBalancerRpc } from '../service/rpc/evm/TronLoadBalancerRpc'
 import { TronRpc } from '../service/rpc/evm/TronRpc'
+import { AlgorandAlgodLoadBalancerRpc } from '../service/rpc/other/AlgorandAlgodLoadBalancerRpc'
+import { AlgorandIndexerLoadBalancerRpc } from '../service/rpc/other/AlgorandIndexerLoadBalancerRpc'
+import { BnbLoadBalancerRpc } from '../service/rpc/other/BnbLoadBalancerRpc'
+import { CardanoLoadBalancerRpc } from '../service/rpc/other/CardanoLoadBalancerRpc'
 import { EosLoadBalancerRpc } from '../service/rpc/other/EosLoadBalancerRpc'
 import { EosRpc } from '../service/rpc/other/EosRpc'
 import { SolanaLoadBalancerRpc } from '../service/rpc/other/SolanaLoadBalancerRpc'
+import { StellarLoadBalancerRpc } from '../service/rpc/other/StellarLoadBalancerRpc'
+import { StellarRpc } from '../service/rpc/other/StellarRpc'
+import { TezosLoadBalancerRpc } from '../service/rpc/other/TezosLoadBalancerRpc'
 import { XrpLoadBalancerRpc } from '../service/rpc/other/XrpLoadBalancerRpc'
 import { UtxoLoadBalancerRpc } from '../service/rpc/utxo/UtxoLoadBalancerRpc'
-import { Constant } from './constant'
-import { CONFIG } from './di.tokens'
-import { EvmBeaconArchiveLoadBalancerRpc } from '../service/rpc/evm/EvmBeaconArchiveLoadBalancerRpc'
 import { UtxoLoadBalancerRpcEstimateFee } from '../service/rpc/utxo/UtxoLoadBalancerRpcEstimateFee'
 import { UtxoRpcEstimateFee } from '../service/rpc/utxo/UtxoRpcEstimateFee'
-import { BnbLoadBalancerRpc } from '../service/rpc/other/BnbLoadBalancerRpc'
+import { Constant } from './constant'
+import { CONFIG, LOGGER } from './di.tokens'
 
 export const Utils = {
   getRpc: <T>(id: string, config: TatumConfig): T => {
     const { network } = config
 
-    if(isBnbLoadBalancerNetwork(network)) {
+    if (isStellarLoadBalancerNetwork(network)) {
+      return Container.of(id).get(StellarLoadBalancerRpc) as T
+    }
+
+    if (isStellarNetwork(network)) {
+      return Container.of(id).get(StellarRpc) as T
+    }
+
+    if (isCardanoNetwork(network)) {
+      return Container.of(id).get(CardanoLoadBalancerRpc) as T
+    }
+
+    if (isAlgorandIndexerNetwork(network)) {
+      return Container.of(id).get(AlgorandIndexerLoadBalancerRpc) as T
+    }
+
+    if (isAlgorandAlgodNetwork(network)) {
+      return Container.of(id).get(AlgorandAlgodLoadBalancerRpc) as T
+    }
+
+    if (isTezosNetwork(network)) {
+      return Container.of(id).get(TezosLoadBalancerRpc) as T
+    }
+
+    if (isBnbLoadBalancerNetwork(network)) {
       return Container.of(id).get(BnbLoadBalancerRpc) as T
     }
 
@@ -151,7 +197,7 @@ export const Utils = {
       return Container.of(id).get(EosRpc) as T
     }
 
-    console.warn(`RPC Network ${network} is not supported.`)
+    Container.of(id).get(LOGGER).warn(`RPC Network ${network} is not supported.`)
     return Container.of(id).get(GenericRpc) as T
   },
   getRpcListUrl: (network: Network): string[] => {
@@ -202,7 +248,22 @@ export const Utils = {
       }
     }
 
-    if (isEosNetwork(network)) {
+    if (isCardanoNetwork(network)) {
+      return {
+        network_identifier: {
+          blockchain: 'cardano',
+          network: Network.CARDANO_ROSETTA === network ? 'mainnet' : 'preprod',
+        },
+      }
+    }
+
+    if (
+      isEosNetwork(network) ||
+      isTezosNetwork(network) ||
+      isAlgorandAlgodNetwork(network) ||
+      isAlgorandIndexerNetwork(network) ||
+      isStellarLoadBalancerNetwork(network)
+    ) {
       return null
     }
 
@@ -213,6 +274,18 @@ export const Utils = {
       return `${url}${Constant.EOS_PREFIX}get_info`
     }
 
+    if (isAlgorandAlgodNetwork(network)) {
+      return `${url}v2/status`
+    }
+
+    if (isAlgorandIndexerNetwork(network)) {
+      return `${url}health`
+    }
+
+    if (isCardanoNetwork(network)) {
+      return `${url}network/status`
+    }
+
     if (isSameGetBlockNetwork(network)) {
       return url
     }
@@ -221,7 +294,26 @@ export const Utils = {
       return url
     }
 
+    if (isTezosNetwork(network)) {
+      return `${url}chains/main/blocks/head/header`
+    }
+
+    if (isStellarLoadBalancerNetwork(network)) {
+      return `${url}fee_stats`
+    }
+
     throw new Error(`Network ${network} is not supported.`)
+  },
+  getStatusMethod(network: Network): string {
+    if (
+      isTezosNetwork(network) ||
+      isAlgorandAlgodNetwork(network) ||
+      isAlgorandIndexerNetwork(network) ||
+      isStellarLoadBalancerNetwork(network)
+    ) {
+      return 'GET'
+    }
+    return 'POST'
   },
   parseStatusPayload: (network: Network, response: JsonRpcResponse<any> | any) => {
     if (isSameGetBlockNetwork(network)) {
@@ -234,6 +326,26 @@ export const Utils = {
 
     if (isEosNetwork(network)) {
       return new BigNumber((response.head_block_num as number) || -1).toNumber()
+    }
+
+    if (isTezosNetwork(network)) {
+      return new BigNumber((response.level as number) || -1).toNumber()
+    }
+
+    if (isAlgorandAlgodNetwork(network)) {
+      return new BigNumber((response['last-round'] as number) || -1).toNumber()
+    }
+
+    if (isAlgorandIndexerNetwork(network)) {
+      return new BigNumber((response['round'] as number) || -1).toNumber()
+    }
+
+    if (isCardanoNetwork(network)) {
+      return new BigNumber((response.current_block_identifier.index as number) || -1).toNumber()
+    }
+
+    if (isStellarLoadBalancerNetwork(network)) {
+      return new BigNumber((response.last_ledger as number) || -1).toNumber()
     }
 
     throw new Error(`Network ${network} is not supported.`)
@@ -249,6 +361,26 @@ export const Utils = {
 
     if (isSameGetBlockNetwork(network)) {
       return response.result !== undefined
+    }
+
+    if (isTezosNetwork(network)) {
+      return response.level !== undefined
+    }
+
+    if (isAlgorandAlgodNetwork(network)) {
+      return response['last-round'] !== undefined
+    }
+
+    if (isAlgorandIndexerNetwork(network)) {
+      return response['round'] !== undefined
+    }
+
+    if (isStellarLoadBalancerNetwork(network)) {
+      return response.last_ledger !== undefined
+    }
+
+    if (isCardanoNetwork(network)) {
+      return response.current_block_identifier.index !== undefined
     }
 
     throw new Error(`Network ${network} is not supported.`)
@@ -354,6 +486,24 @@ export const Utils = {
     }
     throw lastError ?? new Error('Retry timeout failed')
   },
+  fetchWithTimeoutAndRetry: async (
+    url: string,
+    containerId: string,
+    config: RequestInit,
+    timeout = 5000,
+    retry = 2,
+  ): Promise<{ response: Response; responseTime: number }> => {
+    let lastError: unknown = null
+    for (let i = 0; i < retry; i++) {
+      try {
+        const { response, responseTime } = await Utils.fetchWithTimeout(url, containerId, config, timeout)
+        return { response, responseTime }
+      } catch (e: unknown) {
+        lastError = e
+      }
+    }
+    throw lastError ?? new Error('Retry timeout failed')
+  },
   fetchWithTimeout: async (
     url: string,
     containerId: string,
@@ -407,20 +557,29 @@ export const Utils = {
   },
   padWithZero: (data: string, length = 64) => data.replace('0x', '').padStart(length, '0'),
   camelToSnakeCase: (str: string) => str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`),
-  convertObjCamelToSnake: (obj: object) => {
+  camelToDashCase: (str: string) => str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+  convertObjectWithStrategy: (
+    obj: object,
+    strategy: (key: string) => string,
+  ): Record<string, unknown> | Record<string, unknown>[] => {
+    if (Array.isArray(obj)) {
+      return obj.map(Utils.convertObjCamelToSnake) as Record<string, unknown>[]
+    }
     const snakeObj: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
-      const snakeKey = Utils.camelToSnakeCase(key)
+      const snakeKey = strategy(key)
       if (value instanceof BigNumber) {
         snakeObj[snakeKey] = value.toNumber()
       } else if (typeof value === 'object' && value !== null) {
-        snakeObj[snakeKey] = Utils.convertObjCamelToSnake(value)
+        snakeObj[snakeKey] = Utils.convertObjectWithStrategy(value, strategy)
       } else {
         snakeObj[snakeKey] = value
       }
     }
     return snakeObj
   },
+  convertObjCamelToSnake: (obj: object) => Utils.convertObjectWithStrategy(obj, Utils.camelToSnakeCase),
+  convertObjCamelToDash: (obj: object) => Utils.convertObjectWithStrategy(obj, Utils.camelToDashCase),
   getClient: <T>(id: string, network: Network): T => {
     switch (network) {
       case Network.BITCOIN:
@@ -507,9 +666,9 @@ export const Utils = {
       case Network.VECHAIN:
       case Network.VECHAIN_TESTNET:
         return new Vechain(id) as T
-      case Network.XDC:
-      case Network.XDC_TESTNET:
-        return new Xdc(id) as T
+      case Network.XINFIN:
+      case Network.XINFIN_TESTNET:
+        return new XinFin(id) as T
       case Network.XRP:
       case Network.XRP_TESTNET:
         return new Xrp(id) as T
@@ -520,6 +679,7 @@ export const Utils = {
       case Network.TRON_SHASTA:
         return new Tron(id) as T
       case Network.TEZOS:
+      case Network.TEZOS_TESTNET:
         return new Tezos(id) as T
       case Network.HORIZEN_EON:
       case Network.HORIZEN_EON_GOBI:
@@ -531,11 +691,27 @@ export const Utils = {
         return new Chiliz(id) as T
       case Network.BNB:
         return new Bnb(id) as T
+      case Network.ALGORAND_ALGOD:
+      case Network.ALGORAND_ALGOD_TESTNET:
+        return new AlgorandAlgod(id) as T
+      case Network.ALGORAND_INDEXER:
+      case Network.ALGORAND_INDEXER_TESTNET:
+        return new AlgorandIndexer(id) as T
+      case Network.CARDANO_ROSETTA:
+      case Network.CARDANO_ROSETTA_PREPROD:
+        return new CardanoRosetta(id) as T
+      case Network.STELLAR:
+      case Network.STELLAR_TESTNET:
+        return new Stellar(id) as T
       default:
         return new FullSdk(id) as T
     }
   },
 
+  /**
+   * Log message to console if verbose mode is enabled.
+   * @deprecated Use `Container.of(id).get(LOGGER)` instead.
+   */
   log: ({ id, message, data, mode }: { id: string; message?: string; data?: object; mode?: 'table' }) => {
     const config = Container.of(id).get(CONFIG)
     if (config.verbose) {
@@ -592,28 +768,34 @@ export const Utils = {
     }
     return rpc?.nodes?.[0].url || `${Constant.TATUM_API_URL.V3}blockchain/node/${network}`.concat(path || '')
   },
-  addQueryParams: (basePath: string, queryParams?: Record<string, string | string[]>): string => {
-    let queryString = '';
+  addQueryParams: (
+    basePath: string,
+    strategy: (key: string) => string,
+    queryParams?: QueryParams,
+  ): string => {
+    let queryString = ''
 
     if (queryParams) {
-      const query = Utils.convertObjCamelToSnake(queryParams);
-      const params: string[] = [];
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const query: Record<string, QueryValue> = Utils.convertObjectWithStrategy(queryParams, strategy)
+      const params: string[] = []
 
       Object.entries(query).forEach(([key, value]) => {
         if (Array.isArray(value)) {
-          value.forEach(val => {
-            params.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`);
-          });
+          value.forEach((val) => {
+            params.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+          })
         } else {
-          params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`);
+          params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         }
-      });
+      })
 
       if (params.length > 0) {
-        queryString = '?' + params.join('&');
+        queryString = '?' + params.join('&')
       }
     }
 
-    return basePath + queryString;
+    return basePath + queryString
   },
 }

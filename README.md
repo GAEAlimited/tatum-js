@@ -59,6 +59,7 @@ Interact seamlessly with various blockchains through native RPC calls. Say goodb
 | [Klaytn RPC](https://docs.tatum.io/docs/rpc/evm-blockchains/klaytn-rpc-documentation)                     |
 | [Avalanche RPC](https://docs.tatum.io/docs/rpc/evm-blockchains/avalanche-rpc-documentation)               |
 | [Celo RPC](https://docs.tatum.io/docs/rpc/evm-blockchains/celo-rpc-documentation)                         |
+| [XinFin RPC](https://docs.tatum.io/docs/rpc/evm-blockchains/xinfin-rpc-documentation)                     |
 | **UTXO Blockchains**                                                                                      |
 | [Bitcoin RPC](https://docs.tatum.io/docs/rpc/utxo-blockchains/bitcoin-rpc-documentation)                  |
 | [Litecoin RPC](https://docs.tatum.io/docs/rpc/utxo-blockchains/litecoin-rpc-documentation)                |
@@ -69,7 +70,11 @@ Interact seamlessly with various blockchains through native RPC calls. Say goodb
 | [Solana RPC](https://docs.tatum.io/docs/rpc/solana-rpc-documentation)                                     |
 | [XPR RPC](https://docs.tatum.io/docs/rpc/xrp-rpc-documentation)                                           |
 | [Tron RPC](https://docs.tatum.io/docs/rpc/tron-rpc-documentation)                                         |
-| [Eos One RPC](https://docs.tatum.io/docs/rpc/eos-rpc-documentation)                                       |
+| [Eos RPC](https://docs.tatum.io/docs/rpc/eos-rpc-documentation)                                           |
+| [Tezos RPC](https://docs.tatum.io/docs/rpc/tezos-rpc-documentation)                                       |
+| [Agorand RPC](https://docs.tatum.io/docs/rpc/algo-rpc-documentation)                                      |
+| [Cardano RPC](https://docs.tatum.io/docs/rpc/cardano-rpc-documentation)                                   |
+| [Stellar RPC](https://docs.tatum.io/docs/rpc/stellar-rpc-documentation)                                   |
 
 ### 🔔 Create Notifications
 
@@ -163,15 +168,6 @@ Access the latest crypto exchange rates and supported currency information to st
 | [Supported Crypto Currencies](https://docs.tatum.io/docs/exchange-rates/supported-crypto-currencies) |
 | [Supported Fiats](https://docs.tatum.io/docs/exchange-rates/supported-fiats) |
 
-### ⛽ Faucets
-
-Request testnet token sums of cryptocurrency from our [Faucets](http://faucets.tatum.io).
-
-| Documentation |
-| ----- |
-| [Get testnet native tokens](https://docs.tatum.io/docs/faucets/fund) |
-
-
 ### 📘 Getting Started with TatumSDK
 
 This guide will lead you step by step, from basic setup and installation to harnessing the immense capabilities of our library. For a detailed walkthrough, check out the [Getting Started page](https://docs.tatum.io/sdk/get-started-with-tatum-sdk).
@@ -244,7 +240,7 @@ import { TatumSDK, Network, Ethereum } from '@tatumio/tatum'
 const tatum = await TatumSDK.init<Ethereum>({ network: Network.ETHEREUM })
 
 const { result } = await tatum.rpc.getBalance('0x742d35Cc6634C0532925a3b844Bc454e4438f44e')
-console.log(`Balance: ${data}`)
+console.log(`Balance: ${result}`)
 
 // Destroy Tatum SDK - needed for stopping background jobs
 await tatum.destroy()
@@ -301,7 +297,7 @@ For more details, check out the [NFTs documentation](https://docs.tatum.io/docs/
 Using TatumSDK, it's possible to connect your browser application to MetaMask and perform transactions using it. To achieve this, use the following code:
 
 ```ts
-import { TatumSDK, Network, Ethereum } from '@tatumio/tatum'
+import { TatumSDK, Network, Ethereum, MetaMask } from '@tatumio/tatum'
 
 const tatum = await TatumSDK.init<Ethereum>({ network: Network.ETHEREUM })
 
@@ -404,28 +400,6 @@ await tatum.destroy()
 
 For more details, check out the [Wallet address operations documentation](https://docs.tatum.io/docs/wallet-address-operations).
 
-### Get testnet faucet funds
-Using TatumSDK, you can request testnet native token sums of cryptocurrency from our [Faucets](http://faucets.tatum.io).
-
-```ts
-import { TatumSDK, Network, Ethereum } from '@tatumio/tatum'
-
-const tatum = await TatumSDK.init<Ethereum>({ network: Network.ETHEREUM_SEPOLIA })
-
-const res = await tatum.faucet.fund('0x712e3a792c974b3e3dbe41229ad4290791c75a82')
-
-if (res.data) {
-  console.log(res.data)
-} else {
-  console.error(res.error)
-}
-
-// Destroy Tatum SDK - needed for stopping background jobs
-await tatum.destroy()
-```
-
-For more details, check out the [Faucets documentation](https://docs.tatum.io/docs/faucets).
-
 ## RPC calls
 All RPC calls are implemented in the `tatum.rpc.*` submodule.
 
@@ -481,6 +455,17 @@ This section provides a list of various blockchain network status pages, powered
 | [solana-devnet.status.tatum.io](https://solana-devnet.status.tatum.io)                                       |
 | [celo-mainnet-archive.status.tatum.io](https://celo-mainnet-archive.status.tatum.io)                         |
 | [celo-testnet-archive.status.tatum.io](https://celo-testnet-archive.status.tatum.io)                         |
+| [tezos-testnet.status.tatum.io](https://tezos-testnet.status.tatum.io)                                       |
+| [tezos-mainnet.status.tatum.io](https://tezos-mainnet.status.tatum.io)                                       |
+| [algorand-mainnet-algod.status.tatum.io](https://algorand-mainnet-algod.status.tatum.io)                     |
+| [algorand-testnet-algod.status.tatum.io](https://algorand-testnet-algod.status.tatum.io)                     |
+| [algorand-mainnet-indexer.status.tatum.io](https://algorand-mainnet-indexer.status.tatum.io)                 |
+| [algorand-testnet-indexer.status.tatum.io](https://algorand-testnet-indexer.status.tatum.io)                 |
+| [cardano-mainnet.status.tatum.io](https://cardano-mainnet.status.tatum.io)                                   |
+| [cardano-preprod.status.tatum.io](https://cardano-preprod.status.tatum.io)                                   |
+| [xinfin-mainnet-archive.status.tatum.io](https://xinfin-mainnet-archive.status.tatum.io)                     |
+| [stellar-mainnet-archive.status.tatum.io](https://stellar-mainnet-archive.status.tatum.io)                   |
+
 
 
 ### Load Balancer
@@ -577,8 +562,18 @@ Here are the list of nodes for each blockchain:
 | [rpc.tatum.io/avalanche-c-mainnet-archive/list.json](https://rpc.tatum.io/avalanche-c-mainnet-archive/list.json)           |
 | [rpc.tatum.io/solana-mainnet/list.json](https://rpc.tatum.io/solana-mainnet/list.json)                                     |
 | [rpc.tatum.io/solana-devnet/list.json](https://rpc.tatum.io/solana-devnet/list.json)                                       |
-| [rpc.tatum.io/celo-mainnet-archive/list.json](https://rpc.tatum.io/celo-mainnet-archive/list.json)                                |
-| [rpc.tatum.io/celo-testnet-archive/list.json](https://rpc.tatum.io/celo-testnet-archive/list.json)                                |
+| [rpc.tatum.io/celo-mainnet-archive/list.json](https://rpc.tatum.io/celo-mainnet-archive/list.json)                         |
+| [rpc.tatum.io/celo-testnet-archive/list.json](https://rpc.tatum.io/celo-testnet-archive/list.json)                         |
+| [rpc.tatum.io/tezos-testnet/list.json](https://rpc.tatum.io/tezos-testnet/list.json)                                       |
+| [rpc.tatum.io/tezos-mainnet/list.json](https://rpc.tatum.io/tezos-mainnet/list.json)                                       |
+| [rpc.tatum.io/algorand-mainnet-algod/list.json](https://rpc.tatum.io/algorand-mainnet-algod/list.json)                     |
+| [rpc.tatum.io/algorand-testnet-algod/list.json](https://rpc.tatum.io/algorand-testnet-algod/list.json)                     |
+| [rpc.tatum.io/algorand-mainnet-indexer/list.json](https://rpc.tatum.io/algorand-mainnet-indexer/list.json)                 |
+| [rpc.tatum.io/algorand-testnet-indexer/list.json](https://rpc.tatum.io/algorand-testnet-indexer/list.json)                 |
+| [rpc.tatum.io/cardano-mainnet/list.json](https://rpc.tatum.io/cardano-mainnet/list.json)                                   |
+| [rpc.tatum.io/cardano-preprod/list.json](https://rpc.tatum.io/cardano-preprod/list.json)                                   |
+| [rpc.tatum.io/xinfin-mainnet-archive/list.json](https://rpc.tatum.io/xinfin-mainnet-archive/list.json)                     |
+| [rpc.tatum.io/stellar-mainnet-archive/list.json](https://rpc.tatum.io/stellar-mainnet-archive/list.json)                   |
 
 
 Following pattern defines the URL for fetching the list of nodes:

@@ -1,6 +1,7 @@
 export enum Network {
   // Mainnets
-  ALGORAND = 'algorand-mainnet',
+  ALGORAND_ALGOD = 'algorand-mainnet-algod',
+  ALGORAND_INDEXER = 'algorand-mainnet-indexer',
   ARBITRUM_NOVA = 'arb-nova-mainnet',
   ARBITRUM_ONE = 'arbitrum-one-mainnet',
   AURORA = 'aurora-mainnet',
@@ -11,7 +12,7 @@ export enum Network {
   BNB = 'bnb-beacon-chain-mainnet',
   BITCOIN = 'bitcoin-mainnet',
   BITCOIN_CASH = 'bitcoin-cash-mainnet',
-  CARDANO = 'cardano-mainnet',
+  CARDANO_ROSETTA = 'cardano-mainnet',
   CELO = 'celo-mainnet',
   CRONOS = 'cro-mainnet',
   DOGECOIN = 'doge-mainnet',
@@ -42,13 +43,14 @@ export enum Network {
   TEZOS = 'tezos-mainnet',
   TRON = 'tron-mainnet',
   VECHAIN = 'vechain-mainnet',
-  XDC = 'xdc-mainnet',
+  XINFIN = 'xinfin-mainnet',
   XRP = 'ripple-mainnet',
   ZCASH = 'zcash-mainnet',
   ZILLIQA = 'zilliqa-mainnet',
 
   // Testnets
-  ALGORAND_TESTNET = 'algorand-testnet',
+  ALGORAND_ALGOD_TESTNET = 'algorand-testnet-algod',
+  ALGORAND_INDEXER_TESTNET = 'algorand-testnet-indexer',
   ARBITRUM_NOVA_TESTNET = 'arb-testnet',
   AURORA_TESTNET = 'aurora-testnet',
   AVALANCHE_C_TESTNET = 'avax-testnet',
@@ -57,7 +59,7 @@ export enum Network {
   BINANCE_SMART_CHAIN_TESTNET = 'bsc-testnet',
   BITCOIN_TESTNET = 'bitcoin-testnet',
   BITCOIN_CASH_TESTNET = 'bch-testnet',
-  CARDANO_PREPROD = 'cardano-preprod',
+  CARDANO_ROSETTA_PREPROD = 'cardano-preprod',
   CELO_ALFAJORES = 'celo-testnet',
   CRONOS_TESTNET = 'cro-testnet',
   DOGECOIN_TESTNET = 'doge-testnet',
@@ -90,7 +92,7 @@ export enum Network {
   TEZOS_TESTNET = 'tezos-testnet',
   TRON_SHASTA = 'tron-testnet',
   VECHAIN_TESTNET = 'vechain-testnet',
-  XDC_TESTNET = 'xdc-testnet',
+  XINFIN_TESTNET = 'xdc-testnet',
   XRP_TESTNET = 'ripple-testnet',
   ZCASH_TESTNET = 'zcash-testnet',
   ZILLIQA_TESTNET = 'zilliqa-testnet',
@@ -117,8 +119,8 @@ export const EVM_BASED_NETWORKS = [
   Network.BINANCE_SMART_CHAIN_TESTNET,
   Network.VECHAIN,
   Network.VECHAIN_TESTNET,
-  Network.XDC,
-  Network.XDC_TESTNET,
+  Network.XINFIN,
+  Network.XINFIN_TESTNET,
   Network.PALM,
   Network.PALM_TESTNET,
   Network.CRONOS,
@@ -161,21 +163,17 @@ export const UTXO_BASED_NETWORKS = [
   Network.DOGECOIN_TESTNET,
 ]
 
-export const UTXO_LOAD_BALANCER_ESTIMATE_FEE_NETWORKS = [
-  Network.BITCOIN_CASH,
-]
+export const UTXO_LOAD_BALANCER_ESTIMATE_FEE_NETWORKS = [Network.BITCOIN_CASH]
 
-export const UTXO_ESTIMATE_FEE_NETWORKS = [
-  Network.BITCOIN_CASH_TESTNET,
-]
+export const UTXO_ESTIMATE_FEE_NETWORKS = [Network.BITCOIN_CASH_TESTNET]
 
 export const DATA_API_UTXO_NETWORKS = [
   Network.BITCOIN,
   Network.BITCOIN_TESTNET,
   Network.LITECOIN,
   Network.LITECOIN_TESTNET,
-  Network.CARDANO,
-  Network.CARDANO_PREPROD,
+  Network.CARDANO_ROSETTA,
+  Network.CARDANO_ROSETTA_PREPROD,
   Network.DOGECOIN,
   Network.DOGECOIN_TESTNET,
 ]
@@ -229,6 +227,7 @@ export const EVM_LOAD_BALANCER_NETWORKS = [
   Network.AVALANCHE_C,
   Network.CELO,
   Network.CELO_ALFAJORES,
+  Network.XINFIN,
 ]
 
 export const TRON_LOAD_BALANCER_NETWORKS = [Network.TRON]
@@ -237,6 +236,11 @@ export const XRP_LOAD_BALANCER_NETWORKS = [Network.XRP, Network.XRP_TESTNET]
 export const NATIVE_EVM_LOAD_BALANCER_NETWORKS = [Network.KLAYTN, Network.KLAYTN_BAOBAB]
 export const SOLANA_NETWORKS = [Network.SOLANA, Network.SOLANA_DEVNET]
 export const BNB_LOAD_BALANCER_NETWORKS = [Network.BNB]
+export const TEZOS_NETWORKS = [Network.TEZOS, Network.TEZOS_TESTNET]
+export const ALGORAND_ALGOD_NETWORKS = [Network.ALGORAND_ALGOD, Network.ALGORAND_ALGOD_TESTNET]
+export const ALGORAND_INDEXER_NETWORKS = [Network.ALGORAND_INDEXER, Network.ALGORAND_INDEXER_TESTNET]
+export const CARDANO_NETWORKS = [Network.CARDANO_ROSETTA, Network.CARDANO_ROSETTA_PREPROD]
+export const STELLAR_LOAD_BALANCER_NETWORKS = [Network.STELLAR]
 
 export const LOAD_BALANCER_NETWORKS = [
   ...UTXO_LOAD_BALANCER_NETWORKS,
@@ -247,6 +251,11 @@ export const LOAD_BALANCER_NETWORKS = [
   ...NATIVE_EVM_LOAD_BALANCER_NETWORKS,
   ...SOLANA_NETWORKS,
   ...BNB_LOAD_BALANCER_NETWORKS,
+  ...TEZOS_NETWORKS,
+  ...ALGORAND_ALGOD_NETWORKS,
+  ...ALGORAND_INDEXER_NETWORKS,
+  ...CARDANO_NETWORKS,
+  ...STELLAR_LOAD_BALANCER_NETWORKS,
 ]
 
 export const EVM_ARCHIVE_NON_ARCHIVE_LOAD_BALANCER_NETWORKS = [
@@ -272,7 +281,8 @@ export const isEvmBasedNetwork = (network: Network) => EVM_BASED_NETWORKS.includ
 
 export const isUtxoBasedNetwork = (network: Network) => UTXO_BASED_NETWORKS.includes(network)
 
-export const isUtxoLoadBalancerEstimateFeeNetwork = (network: Network) => UTXO_LOAD_BALANCER_ESTIMATE_FEE_NETWORKS.includes(network)
+export const isUtxoLoadBalancerEstimateFeeNetwork = (network: Network) =>
+  UTXO_LOAD_BALANCER_ESTIMATE_FEE_NETWORKS.includes(network)
 
 export const isUtxoEstimateFeeNetwork = (network: Network) => UTXO_ESTIMATE_FEE_NETWORKS.includes(network)
 
@@ -312,6 +322,20 @@ export const isNativeEvmLoadBalancerNetwork = (network: Network) =>
   NATIVE_EVM_LOAD_BALANCER_NETWORKS.includes(network)
 
 export const isBnbLoadBalancerNetwork = (network: Network) => BNB_LOAD_BALANCER_NETWORKS.includes(network)
+
+export const isTezosNetwork = (network: Network) => TEZOS_NETWORKS.includes(network)
+
+export const isAlgorandAlgodNetwork = (network: Network) => ALGORAND_ALGOD_NETWORKS.includes(network)
+
+export const isAlgorandIndexerNetwork = (network: Network) => ALGORAND_INDEXER_NETWORKS.includes(network)
+
+export const isCardanoNetwork = (network: Network) => CARDANO_NETWORKS.includes(network)
+
+export const isStellarLoadBalancerNetwork = (network: Network) =>
+  STELLAR_LOAD_BALANCER_NETWORKS.includes(network)
+
+export const isStellarNetwork = (network: Network) =>
+  [Network.STELLAR, Network.STELLAR_TESTNET].includes(network)
 
 export const isSameGetBlockNetwork = (network: Network) =>
   isUtxoBasedNetwork(network) ||

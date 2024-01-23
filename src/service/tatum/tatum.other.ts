@@ -1,16 +1,19 @@
 import { Container } from 'typedi'
-import { SolanaRpcSuite, TronRpcSuite, XrpRpcInterface } from '../../dto'
+import { SolanaRpcSuite, TezosRpcInterface, TronRpcSuite, XrpRpcInterface } from '../../dto'
+import { AlgorandAlgodRpcSuite } from '../../dto/rpc/AlgorandAlgodRpcSuite'
+import { AlgorandIndexerRpcSuite } from '../../dto/rpc/AlgorandIndexerRpcSuite'
+import { BnbRpcSuite } from '../../dto/rpc/BnbRpcSuite'
+import { CardanoRpcSuite } from '../../dto/rpc/CardanoRpcSuite'
 import { EosRpcSuite } from '../../dto/rpc/EosRpcSuite'
+import { StellarRpcSuite } from '../../dto/rpc/StellarRpcSuite'
 import { CONFIG, Utils } from '../../util'
 import { Address, AddressTezos, AddressTron } from '../address'
-import { Faucet } from '../faucet'
 import { Ipfs } from '../ipfs'
 import { Nft, NftTezos } from '../nft'
 import { Notification } from '../notification'
 import { Rates } from '../rate'
 import { Token } from '../token'
 import { TatumSdkChain } from './tatum'
-import { BnbRpcSuite } from '../../dto/rpc/BnbRpcSuite'
 
 export abstract class BaseOther extends TatumSdkChain {
   ipfs: Ipfs
@@ -87,12 +90,50 @@ export class Tezos extends BaseOther {
   notification: Notification
   address: AddressTezos
   nft: NftTezos
+  rpc: TezosRpcInterface
 
   constructor(id: string) {
     super(id)
+    this.rpc = Utils.getRpc<TezosRpcInterface>(id, Container.of(id).get(CONFIG))
     this.notification = Container.of(id).get(Notification)
     this.address = Container.of(id).get(AddressTezos)
     this.nft = Container.of(this.id).get(NftTezos)
+  }
+}
+
+export class AlgorandAlgod extends BaseOther {
+  rpc: AlgorandAlgodRpcSuite
+
+  constructor(id: string) {
+    super(id)
+    this.rpc = Utils.getRpc<AlgorandAlgodRpcSuite>(id, Container.of(id).get(CONFIG))
+  }
+}
+
+export class AlgorandIndexer extends BaseOther {
+  rpc: AlgorandIndexerRpcSuite
+
+  constructor(id: string) {
+    super(id)
+    this.rpc = Utils.getRpc<AlgorandIndexerRpcSuite>(id, Container.of(id).get(CONFIG))
+  }
+}
+
+export class CardanoRosetta extends BaseOther {
+  rpc: CardanoRpcSuite
+
+  constructor(id: string) {
+    super(id)
+    this.rpc = Utils.getRpc<CardanoRpcSuite>(id, Container.of(id).get(CONFIG))
+  }
+}
+
+export class Stellar extends BaseOther {
+  rpc: StellarRpcSuite
+
+  constructor(id: string) {
+    super(id)
+    this.rpc = Utils.getRpc<StellarRpcSuite>(id, Container.of(id).get(CONFIG))
   }
 }
 
@@ -102,7 +143,6 @@ export class FullSdk extends TatumSdkChain {
   token: Token
   address: Address
   rates: Rates
-  faucet: Faucet
   ipfs: Ipfs
 
   constructor(id: string) {
@@ -112,7 +152,6 @@ export class FullSdk extends TatumSdkChain {
     this.token = Container.of(id).get(Token)
     this.address = Container.of(id).get(Address)
     this.rates = Container.of(id).get(Rates)
-    this.faucet = Container.of(id).get(Faucet)
     this.ipfs = Container.of(id).get(Ipfs)
   }
 }
