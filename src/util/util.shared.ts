@@ -7,7 +7,7 @@ import {
   isAlgorandAlgodNetwork,
   isAlgorandIndexerNetwork,
   isBnbLoadBalancerNetwork,
-  isCardanoNetwork,
+  isCardanoNetwork, isDogecoinLoadBalancedNetwork,
   isEosLoadBalancerNetwork,
   isEosNetwork,
   isEvmArchiveNonArchiveBeaconLoadBalancerNetwork,
@@ -94,7 +94,7 @@ import { BnbLoadBalancerRpc } from '../service/rpc/other/BnbLoadBalancerRpc'
 import { CardanoLoadBalancerRpc } from '../service/rpc/other/CardanoLoadBalancerRpc'
 import { EosLoadBalancerRpc } from '../service/rpc/other/EosLoadBalancerRpc'
 import { EosRpc } from '../service/rpc/other/EosRpc'
-import { SolanaLoadBalancerRpc } from '../service/rpc/other/SolanaLoadBalancerRpc'
+import { SolanaArchiveLoadBalancerRpc } from '../service/rpc/other/SolanaArchiveLoadBalancerRpc'
 import { StellarLoadBalancerRpc } from '../service/rpc/other/StellarLoadBalancerRpc'
 import { StellarRpc } from '../service/rpc/other/StellarRpc'
 import { TezosLoadBalancerRpc } from '../service/rpc/other/TezosLoadBalancerRpc'
@@ -104,6 +104,7 @@ import { UtxoLoadBalancerRpcEstimateFee } from '../service/rpc/utxo/UtxoLoadBala
 import { UtxoRpcEstimateFee } from '../service/rpc/utxo/UtxoRpcEstimateFee'
 import { Constant } from './constant'
 import { CONFIG, LOGGER } from './di.tokens'
+import { DogeLoadBalancedRpc } from '../service/rpc/utxo/DogeLoadBalancedRpc'
 
 export const Utils = {
   getRpc: <T>(id: string, config: TatumConfig): T => {
@@ -135,6 +136,10 @@ export const Utils = {
 
     if (isBnbLoadBalancerNetwork(network)) {
       return Container.of(id).get(BnbLoadBalancerRpc) as T
+    }
+
+    if (isDogecoinLoadBalancedNetwork(network)) {
+      return Container.of(id).get(DogeLoadBalancedRpc) as T
     }
 
     if (isUtxoLoadBalancerEstimateFeeNetwork(network)) {
@@ -178,7 +183,7 @@ export const Utils = {
     }
 
     if (isSolanaNetwork(network)) {
-      return Container.of(id).get(SolanaLoadBalancerRpc) as T
+      return Container.of(id).get(SolanaArchiveLoadBalancerRpc) as T
     }
 
     if (isTronLoadBalancerNetwork(network)) {
@@ -415,6 +420,8 @@ export const Utils = {
         return Network.HORIZEN_EON
       case AddressEventNotificationChain.CHZ:
         return Network.CHILIZ
+      case AddressEventNotificationChain.FLR:
+        return Network.FLARE
       default:
         throw new Error(`Chain ${chain} is not supported.`)
     }
@@ -436,6 +443,7 @@ export const Utils = {
       case Network.ETHEREUM:
       case Network.ETHEREUM_SEPOLIA:
       case Network.ETHEREUM_GOERLI:
+      case Network.ETHEREUM_HOLESKY:
         return AddressEventNotificationChain.ETH
       case Network.POLYGON:
       case Network.POLYGON_MUMBAI:
@@ -464,6 +472,11 @@ export const Utils = {
         return AddressEventNotificationChain.EON
       case Network.CHILIZ:
         return AddressEventNotificationChain.CHZ
+      case Network.FLARE:
+      case Network.FLARE_COSTON:
+      case Network.FLARE_COSTON_2:
+      case Network.FLARE_SONGBIRD:
+        return AddressEventNotificationChain.FLR
       default:
         throw new Error(`Network ${network} is not supported.`)
     }

@@ -9,12 +9,29 @@ import {
   Network,
 } from '../service'
 import { ResponseDto } from '../util'
+import { NetworkUtils } from '../util/network.utils'
 
 export const e2eUtil = {
+  initConfig: (network: Network, apiKey?: string) => {
+    return {
+      network,
+      verbose: e2eUtil.isVerbose,
+      retryCount: 5,
+      retryDelay: 2000,
+      apiKey: {
+        v4: apiKey ?? NetworkUtils.getV4ApiKeyForNetwork(network),
+      },
+    }
+  },
   subscriptions: {
     getAddress: (network: Network): string => {
       switch (network) {
         case Network.ETHEREUM_SEPOLIA:
+        case Network.ETHEREUM_HOLESKY:
+        case Network.FLARE:
+        case Network.FLARE_COSTON:
+        case Network.FLARE_COSTON_2:
+        case Network.FLARE_SONGBIRD:
           return '0xdb4C3b4350EE869F2D0a2F43ce0292865E2Aa149'
         case Network.CELO_ALFAJORES:
           return '0xdf083B077F1FD890fC71feCaBbd3F68F94cD21Bf'
@@ -80,7 +97,7 @@ export const e2eUtil = {
         address,
       })
       if (error) {
-        console.log(error)
+        await tatum.destroy()
         throw new Error(error.message.join(','))
       }
 

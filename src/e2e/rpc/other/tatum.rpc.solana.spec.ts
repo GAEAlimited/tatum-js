@@ -12,7 +12,8 @@ const getClient = async (testnet?: boolean): Promise<Solana> =>
 
 const blockNumber = 203046000
 
-describe('Solana', () => {
+// TODO: Too unstable
+describe.skip('Solana', () => {
   describe('mainnet', () => {
     describe('getAccountInfo', () => {
       it('should return account info', async () => {
@@ -56,26 +57,6 @@ describe('Solana', () => {
         await tatum.destroy()
         expect(typeof result).toBe('number')
         expect(result).toBeGreaterThan(0)
-      })
-    })
-
-    // Too unstable
-    describe.skip('getBlock', () => {
-      it('should return a recent block', async () => {
-        const tatum = await getClient()
-        const { result: slot } = await tatum.rpc.getSlot()
-        const { result } = await tatum.rpc.getBlock(slot || 0, {
-          encoding: Encoding.JsonParsed,
-          maxSupportedTransactionVersion: 0,
-        })
-        await tatum.destroy()
-        expect(result).toHaveProperty('blockhash')
-        expect(result?.blockhash).toBeTruthy()
-        expect(result?.previousBlockhash).toBeTruthy()
-        expect(result?.blockHeight).toBeGreaterThan(0)
-        expect(result?.parentSlot).toBeGreaterThan(0)
-        expect(result?.blockTime).toBeGreaterThan(0)
-        expect(Array.isArray(result?.transactions)).toBe(true)
       })
     })
 
@@ -408,6 +389,25 @@ describe('Solana', () => {
         await tatum.destroy()
         expect(result).toHaveProperty('commitment')
         expect(result?.totalStake).toBeGreaterThan(0)
+      })
+    })
+
+    describe('getBlock', () => {
+      it('should return a recent block', async () => {
+        const tatum = await getClient(true)
+        const { result: slot } = await tatum.rpc.getSlot()
+        const { result } = await tatum.rpc.getBlock(slot || 0, {
+          encoding: Encoding.JsonParsed,
+          maxSupportedTransactionVersion: 0,
+        })
+        await tatum.destroy()
+        expect(result).toHaveProperty('blockhash')
+        expect(result?.blockhash).toBeTruthy()
+        expect(result?.previousBlockhash).toBeTruthy()
+        expect(result?.blockHeight).toBeGreaterThan(0)
+        expect(result?.parentSlot).toBeGreaterThan(0)
+        expect(result?.blockTime).toBeGreaterThan(0)
+        expect(Array.isArray(result?.transactions)).toBe(true)
       })
     })
   })

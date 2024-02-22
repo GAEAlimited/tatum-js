@@ -1,3 +1,51 @@
+## [4.2.11] - 2024.2.22
+
+### Fixed
+
+- Fixed the `getBlock` method for Doge, addressing an issue with the second boolean parameter.
+
+## [4.2.10] - 2024.2.22
+
+### Fixed
+
+- Fixed tests. Temporarily disabled `data-api` related tests and `eos` tests.
+
+## [4.2.9] - 2024.2.15
+
+### Added
+
+- Added support for Flare, Flare Coston, Flare Coston 2 and Flare Songbird subscriptions.
+
+## [4.2.8] - 2024.2.15
+
+### Updated
+
+- Updated `address` module for EVM chains. Users can add parameter `tokenAddress` to `getTransactions` method to filter transactions by token address.
+
+## [4.2.7] - 2024.2.12
+
+### Updated
+
+- Updated archive condition for evm rpc calls
+
+## [4.2.6] - 2024.2.12
+
+### Added
+
+- Added support for Solana load balancer based on the method name.
+
+## [4.2.5] - 2024.1.31
+
+### Added
+
+- Added support for Holesky Ethereum testnet for subscriptions.
+
+## [4.2.4] - 2024.1.25
+
+### Fixed
+
+- Fix import of LoadBalancer to keep it working in browser
+
 ## [4.2.3] - 2024.1.23
 
 ### Updated

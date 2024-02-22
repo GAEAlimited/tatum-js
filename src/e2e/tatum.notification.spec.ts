@@ -1,5 +1,5 @@
 import { Network } from '../dto'
-import { Ethereum, NotificationSubscription, TatumSDK } from '../service'
+import { Ethereum, FullSdk, NotificationSubscription, TatumSDK } from '../service'
 import { Status } from '../util'
 import {
   AddressEventNetworks,
@@ -19,16 +19,9 @@ import { e2eUtil } from './e2e.util'
 
 // TODO pipeline dont work with API keys
 
-describe.skip('notification', () => {
+describe('notification', () => {
   beforeAll(async () => {
-    const tatum = await TatumSDK.init<Ethereum>({
-      network: Network.ETHEREUM,
-      retryCount: 10,
-      retryDelay: 5000,
-      apiKey: {
-        v4: process.env.V4_API_KEY_MAINNET,
-      },
-    })
+    const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM))
     const notifications = await tatum.notification.getAll()
 
     if (notifications?.data?.length > 0) {
@@ -41,14 +34,7 @@ describe.skip('notification', () => {
     describe('IP auth', () => {
       describe('Address Event', () => {
         it.each(Object.values(AddressEventNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<FullSdk>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -59,14 +45,7 @@ describe.skip('notification', () => {
 
       describe('Incoming Native Tx', () => {
         it.each(Object.values(IncomingNativeTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -77,14 +56,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Native Tx', () => {
         it.each(Object.values(OutgoingNativeTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -95,14 +67,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Failed Tx', () => {
         it.each(Object.values(OutgoingFailedNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -113,14 +78,7 @@ describe.skip('notification', () => {
 
       describe('Paid Fee', () => {
         it.each(Object.values(PaidFeeNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -131,14 +89,7 @@ describe.skip('notification', () => {
 
       describe('Incoming Internal Tx', () => {
         it.each(Object.values(InternalTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -149,14 +100,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Internal Tx', () => {
         it.each(Object.values(InternalTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -167,14 +111,7 @@ describe.skip('notification', () => {
 
       describe('Incoming Fungible Tx', () => {
         it.each(Object.values(FungibleTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -185,14 +122,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Fungible Tx', () => {
         it.each(Object.values(FungibleTxNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -203,14 +133,7 @@ describe.skip('notification', () => {
 
       describe('Incoming Nft Tx', () => {
         it.each(Object.values(NftNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -221,14 +144,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Nft Tx', () => {
         it.each(Object.values(NftNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -239,14 +155,7 @@ describe.skip('notification', () => {
 
       describe('Incoming Multitoken Tx', () => {
         it.each(Object.values(MultitokenNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -257,14 +166,7 @@ describe.skip('notification', () => {
 
       describe('Outgoing Multitoken Tx', () => {
         it.each(Object.values(MultitokenNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testAddressBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -275,14 +177,7 @@ describe.skip('notification', () => {
 
       describe('Failed Txs Per Block', () => {
         it.each(Object.values(FailedTxPerBlockNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testBlockBasedSubscription(
             tatum,
             tatum.notification.subscribe.failedTxsPerBlock,
@@ -292,14 +187,7 @@ describe.skip('notification', () => {
 
       describe('Contract Address Log Event', () => {
         it.each(Object.values(ContractAddressLogEventNetworks))('OK %s', async (network: Network) => {
-          const tatum = await TatumSDK.init<Ethereum>({
-            network,
-            retryCount: 10,
-            retryDelay: 5000,
-            apiKey: {
-              v4: process.env.V4_API_KEY_MAINNET,
-            },
-          })
+          const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(network))
           await e2eUtil.subscriptions.testContractBasedSubscription(
             tatum,
             e2eUtil.subscriptions.getAddress(network),
@@ -310,14 +198,7 @@ describe.skip('notification', () => {
     })
 
     it('NOK - existing subscription ', async () => {
-      const tatum = await TatumSDK.init<Ethereum>({
-        network: Network.ETHEREUM,
-        retryCount: 10,
-        retryDelay: 5000,
-        apiKey: {
-          v4: process.env.V4_API_KEY_MAINNET,
-        },
-      })
+      const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM))
       await tatum.notification.subscribe.addressEvent({
         url: 'https://tatum.com',
         address: TestConst.EXISTING_SUBSCRIPTION_ETH_ADDRESS,
@@ -337,14 +218,7 @@ describe.skip('notification', () => {
     })
 
     it('NOK - invalid address', async () => {
-      const tatum = await TatumSDK.init<Ethereum>({
-        network: Network.ETHEREUM,
-        retryCount: 10,
-        retryDelay: 5000,
-        apiKey: {
-          v4: process.env.V4_API_KEY_MAINNET,
-        },
-      })
+      const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM))
 
       const { status, error } = await tatum.notification.subscribe.addressEvent({
         url: 'https://tatum.io',
@@ -361,14 +235,7 @@ describe.skip('notification', () => {
 
   describe('deleteSubscription', () => {
     it('OK', async () => {
-      const tatum = await TatumSDK.init<Ethereum>({
-        network: Network.ETHEREUM_SEPOLIA,
-        retryCount: 10,
-        retryDelay: 5000,
-        apiKey: {
-          v4: process.env.V4_API_KEY_MAINNET,
-        },
-      })
+      const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM_SEPOLIA))
       const address = e2eUtil.subscriptions.getAddress(Network.ETHEREUM_SEPOLIA)
       const { data: subscribeData } = await tatum.notification.subscribe.addressEvent({
         url: 'https://tatum.io',
@@ -385,14 +252,7 @@ describe.skip('notification', () => {
     })
 
     it('NOK - invalid subscription', async () => {
-      const tatum = await TatumSDK.init<Ethereum>({
-        network: Network.ETHEREUM_SEPOLIA,
-        retryCount: 10,
-        retryDelay: 5000,
-        apiKey: {
-          v4: process.env.V4_API_KEY_MAINNET,
-        },
-      })
+      const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM_SEPOLIA))
       const { data, status, error } = await tatum.notification.unsubscribe('invalid-subscription-id')
       expect(data).toEqual(null)
       expect(status).toEqual(Status.ERROR)
@@ -404,14 +264,7 @@ describe.skip('notification', () => {
   })
 
   it('getAll', async () => {
-    const tatum = await TatumSDK.init<Ethereum>({
-      network: Network.ETHEREUM,
-      retryCount: 10,
-      retryDelay: 5000,
-      apiKey: {
-        v4: process.env.V4_API_KEY_MAINNET,
-      },
-    })
+    const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM))
     const { data } = await tatum.notification.getAll()
     expect(data).not.toHaveLength(0)
     expect(data[0].id).toBeDefined()
@@ -425,14 +278,7 @@ describe.skip('notification', () => {
 
   // TODO pipeline dont work with this test - IP auth
   it.skip('getAllExecutedWebhooks', async () => {
-    const tatum = await TatumSDK.init<Ethereum>({
-      network: Network.ETHEREUM_SEPOLIA,
-      retryCount: 10,
-      retryDelay: 5000,
-      apiKey: {
-        v4: process.env.V4_API_KEY_MAINNET,
-      },
-    })
+    const tatum = await TatumSDK.init<Ethereum>(e2eUtil.initConfig(Network.ETHEREUM_SEPOLIA))
     const { data } = await tatum.notification.getAllExecutedWebhooks()
     expect(data[0].type).toBeDefined()
     expect(data[0].id).toBeDefined()
